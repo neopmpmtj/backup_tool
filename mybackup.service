@@ -9,7 +9,7 @@ Type=oneshot
 User=pmpmt
 Group=pmpmt
 
-WorkingDirectory=/home/pmpmt/Documents
+WorkingDirectory=/home/pmpmt
 
 Environment=BACKUP_INTERACTIVE=0
 Environment=PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src
@@ -20,7 +20,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-ReadWritePaths=/home/pmpmt/Documents /home/pmpmt/tools_custom
+ReadWritePaths=/home/pmpmt
 
 TimeoutStartSec=20min
 

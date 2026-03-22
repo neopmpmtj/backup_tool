@@ -2,7 +2,7 @@
 
 How to run the backup on Ubuntu with a **systemd service + timer** and a virtual environment.
 
-- **What gets backed up:** whatever directory you set as `WorkingDirectory` (below: `/home/pmpmt/Documents`).
+- **What gets backed up:** whatever directory you set as `WorkingDirectory` (below: `/home/pmpmt` — VPS with tools_custom).
 - **Entry point:** `python -m backup_tool.main` (package in `src/backup_tool/`).
 - **Virtualenv:** often `backup_tool/.venv` at the repo root (adjust if elsewhere).
 - **Schedule:** every **1 hour** (change in the timer unit).
@@ -21,9 +21,9 @@ Assume the project already runs manually before you automate it.
 ## 1. Verify that the script runs manually
 
 ```bash
-cd /home/pmpmt/Documents
+cd /home/pmpmt
 
-# Use your real venv path; PYTHONPATH must include backup_tool/src
+# PYTHONPATH must include backup_tool/src
 PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src \
   /home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
 ```
@@ -51,8 +51,8 @@ Type=oneshot
 User=pmpmt
 Group=pmpmt
 
-# Directory that is snapshotted (PWD for the backup)
-WorkingDirectory=/home/pmpmt/Documents
+# Directory that is snapshotted (PWD for the backup) — VPS: /home/pmpmt + tools_custom
+WorkingDirectory=/home/pmpmt
 
 # Timer/cron runs must not wait for a browser
 Environment=BACKUP_INTERACTIVE=0
@@ -67,7 +67,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-ReadWritePaths=/home/pmpmt/Documents /home/pmpmt/tools_custom
+ReadWritePaths=/home/pmpmt
 
 TimeoutStartSec=20min
 
@@ -80,7 +80,7 @@ Notes:
 - `User=` / `Group=` — run as your normal user.
 - `WorkingDirectory=` — controls **what folder** is backed up; keep it consistent with manual tests.
 - `PYTHONPATH` — must include `.../backup_tool/src` so Python finds the package. `ExecStart=` uses the venv `python` and `-m backup_tool.main`.
-- `ReadWritePaths=` must cover the tree that contains `.env` (repo root), `src/backup_tool/backup_config.json`, the OAuth token file, `src/backup_tool/backup.log`, and `.backup_cache/` under `WorkingDirectory`.
+- `ReadWritePaths=/home/pmpmt` covers tools_custom/backup_tool (config, token, log) and `.backup_cache/` under `WorkingDirectory`.
 
 Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
 
@@ -197,7 +197,7 @@ sudo systemctl disable mybackup.timer
    Run once with a browser on the machine:
 
    ```bash
-   cd /home/pmpmt/Documents
+   cd /home/pmpmt
    PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src \
      BACKUP_INTERACTIVE=1 /home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
    ```

@@ -54,10 +54,10 @@ pip install -r requirements.txt
 
 ## First-time authorization
 
-Run once manually so the browser OAuth flow can create the token file. `cd` to the folder you want backed up (e.g. Documents), then run with `PYTHONPATH` pointing at your backup_tool `src`:
+Run once manually so the browser OAuth flow can create the token file. `cd` to the folder you want backed up (e.g. home dir), then run with `PYTHONPATH` pointing at your backup_tool `src`:
 
 ```bash
-cd /home/pmpmt/Documents
+cd /home/pmpmt
 PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src \
   BACKUP_INTERACTIVE=1 /home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
 ```
@@ -67,7 +67,7 @@ After this, the systemd timer can run non-interactively.
 ## Run manually (non-interactive)
 
 ```bash
-cd /home/pmpmt/Documents
+cd /home/pmpmt
 PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src \
   /home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
 ```
@@ -84,7 +84,7 @@ Archives are created in **`.backup_cache/`** under the working directory. They a
 
 ## Troubleshooting
 
-- **`ProtectHome=true` in systemd** must allow read/write to the tree that contains `.env` (repo root), `src/backup_tool/backup_config.json`, the token file, and `src/backup_tool/backup.log`. The sample unit below uses `ReadWritePaths` for both the backup_tool repo and the snapshotted directory.
+- **`ProtectHome=true` in systemd** must allow read/write to the tree that contains `.env` (repo root), `src/backup_tool/backup_config.json`, the token file, and `src/backup_tool/backup.log`. The sample unit uses `ReadWritePaths=/home/pmpmt` (VPS layout: home + tools_custom).
 - If OAuth was revoked, run the **First-time authorization** step again with `BACKUP_INTERACTIVE=1`.
 
 ---
@@ -107,7 +107,7 @@ Type=oneshot
 User=pmpmt
 Group=pmpmt
 
-WorkingDirectory=/home/pmpmt/Documents
+WorkingDirectory=/home/pmpmt
 
 Environment=BACKUP_INTERACTIVE=0
 Environment=PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src
@@ -118,7 +118,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-ReadWritePaths=/home/pmpmt/Documents /home/pmpmt/tools_custom
+ReadWritePaths=/home/pmpmt
 
 TimeoutStartSec=20min
 
@@ -128,10 +128,10 @@ WantedBy=multi-user.target
 
 **Why these matter**
 
-- `WorkingDirectory=` is the tree that gets snapshotted (here, your Documents folder).
+- `WorkingDirectory=` is the tree that gets snapshotted (here, `/home/pmpmt` — VPS layout with tools_custom).
 - `Environment=BACKUP_INTERACTIVE=0` avoids hanging on a timer waiting for a browser.
 - `PYTHONPATH` must include `.../backup_tool/src` so Python finds the package.
-- `ReadWritePaths=` needs both the snapshotted dir (for `.backup_cache`) and the backup_tool repo (for config, token, log).
+- `ReadWritePaths=/home/pmpmt` covers both the snapshotted dir and backup_tool under tools_custom.
 
 ### `/etc/systemd/system/mybackup.timer`
 
