@@ -37,7 +37,7 @@ As long as the timer runs successfully:
 From the repository root (the directory containing `src/` and `pyproject.toml`):
 
 ```bash
-cd /path/to/backup_tool
+cd /home/pmpmt/tools_custom/backup_tool
 
 cp src/backup_tool/backup_config.json.example.json src/backup_tool/backup_config.json
 cp .env.example .env
@@ -54,12 +54,12 @@ pip install -r requirements.txt
 
 ## First-time authorization
 
-Run once manually so the browser OAuth flow can create the token file. Set `WorkingDirectory` to the folder you want backed up (e.g. your Documents folder):
+Run once manually so the browser OAuth flow can create the token file. `cd` to the folder you want backed up (e.g. Documents), then run with `PYTHONPATH` pointing at your backup_tool `src`:
 
 ```bash
 cd /home/pmpmt/Documents
-PYTHONPATH=/home/pmpmt/Documents/backup_tool/src \
-  BACKUP_INTERACTIVE=1 /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src \
+  BACKUP_INTERACTIVE=1 /home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
 ```
 
 After this, the systemd timer can run non-interactively.
@@ -68,8 +68,8 @@ After this, the systemd timer can run non-interactively.
 
 ```bash
 cd /home/pmpmt/Documents
-PYTHONPATH=/home/pmpmt/Documents/backup_tool/src \
-  /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src \
+  /home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
 ```
 
 ## Where local temp archives go
@@ -84,7 +84,7 @@ Archives are created in **`.backup_cache/`** under the working directory. They a
 
 ## Troubleshooting
 
-- **`ProtectHome=true` in systemd** must allow read/write to the tree that contains `.env` (repo root), `src/backup_tool/backup_config.json`, the token file, and `src/backup_tool/backup.log`. The sample unit below uses `ReadWritePaths=/home/pmpmt/Documents` so the backup_tool repo and snapshot directory are writable.
+- **`ProtectHome=true` in systemd** must allow read/write to the tree that contains `.env` (repo root), `src/backup_tool/backup_config.json`, the token file, and `src/backup_tool/backup.log`. The sample unit below uses `ReadWritePaths` for both the backup_tool repo and the snapshotted directory.
 - If OAuth was revoked, run the **First-time authorization** step again with `BACKUP_INTERACTIVE=1`.
 
 ---
@@ -110,15 +110,15 @@ Group=pmpmt
 WorkingDirectory=/home/pmpmt/Documents
 
 Environment=BACKUP_INTERACTIVE=0
-Environment=PYTHONPATH=/home/pmpmt/Documents/backup_tool/src
+Environment=PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src
 
-ExecStart=/home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+ExecStart=/home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
 
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-ReadWritePaths=/home/pmpmt/Documents
+ReadWritePaths=/home/pmpmt/Documents /home/pmpmt/tools_custom
 
 TimeoutStartSec=20min
 
@@ -130,7 +130,8 @@ WantedBy=multi-user.target
 
 - `WorkingDirectory=` is the tree that gets snapshotted (here, your Documents folder).
 - `Environment=BACKUP_INTERACTIVE=0` avoids hanging on a timer waiting for a browser.
-- `PYTHONPATH` must include `.../backup_tool/src` so Python finds the package; adjust paths if your backup_tool dir differs.
+- `PYTHONPATH` must include `.../backup_tool/src` so Python finds the package.
+- `ReadWritePaths=` needs both the snapshotted dir (for `.backup_cache`) and the backup_tool repo (for config, token, log).
 
 ### `/etc/systemd/system/mybackup.timer`
 
@@ -149,9 +150,12 @@ Unit=mybackup.service
 WantedBy=timers.target
 ```
 
-### Reload and enable
+### Install the units
+
+Copy the service and timer from the repo, then reload and enable:
 
 ```bash
+sudo cp /home/pmpmt/tools_custom/backup_tool/mybackup.service /home/pmpmt/tools_custom/backup_tool/mybackup.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now mybackup.timer
 ```

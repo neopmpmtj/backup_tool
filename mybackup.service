@@ -1,0 +1,28 @@
+[Unit]
+Description=Google Drive snapshot backup (project directory)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+
+User=pmpmt
+Group=pmpmt
+
+WorkingDirectory=/home/pmpmt/Documents
+
+Environment=BACKUP_INTERACTIVE=0
+Environment=PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src
+
+ExecStart=/home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/home/pmpmt/Documents /home/pmpmt/tools_custom
+
+TimeoutStartSec=20min
+
+[Install]
+WantedBy=multi-user.target

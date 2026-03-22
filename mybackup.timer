@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Google Drive snapshot backup hourly
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+Persistent=true
+AccuracySec=1min
+Unit=mybackup.service
+
+[Install]
+WantedBy=timers.target

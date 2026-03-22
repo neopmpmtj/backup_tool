@@ -24,8 +24,8 @@ Assume the project already runs manually before you automate it.
 cd /home/pmpmt/Documents
 
 # Use your real venv path; PYTHONPATH must include backup_tool/src
-PYTHONPATH=/home/pmpmt/Documents/backup_tool/src \
-  /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src \
+  /home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
 ```
 
 Fix dependencies, `.env`, `backup_config.json`, and OAuth token paths before continuing.
@@ -56,18 +56,18 @@ WorkingDirectory=/home/pmpmt/Documents
 
 # Timer/cron runs must not wait for a browser
 Environment=BACKUP_INTERACTIVE=0
-Environment=PYTHONPATH=/home/pmpmt/Documents/backup_tool/src
+Environment=PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src
 
 # Credentials live in .env at repo root (loaded by python-dotenv); no need for
 # Environment=GOOGLE_* in the unit unless you prefer systemd to inject them.
 
-ExecStart=/home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+ExecStart=/home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
 
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=true
-ReadWritePaths=/home/pmpmt/Documents
+ReadWritePaths=/home/pmpmt/Documents /home/pmpmt/tools_custom
 
 TimeoutStartSec=20min
 
@@ -149,7 +149,7 @@ journalctl -u mybackup.service -f
 ### 5.4 App log file
 
 ```bash
-tail -n 50 /home/pmpmt/Documents/backup_tool/src/backup_tool/backup.log
+tail -n 50 /home/pmpmt/tools_custom/backup_tool/src/backup_tool/backup.log
 ```
 
 ---
@@ -198,8 +198,8 @@ sudo systemctl disable mybackup.timer
 
    ```bash
    cd /home/pmpmt/Documents
-   PYTHONPATH=/home/pmpmt/Documents/backup_tool/src \
-     BACKUP_INTERACTIVE=1 /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+   PYTHONPATH=/home/pmpmt/tools_custom/backup_tool/src \
+     BACKUP_INTERACTIVE=1 /home/pmpmt/tools_custom/backup_tool/.venv/bin/python -m backup_tool.main
    ```
 
    Ensure timer runs with `BACKUP_INTERACTIVE=0` (or unset).
