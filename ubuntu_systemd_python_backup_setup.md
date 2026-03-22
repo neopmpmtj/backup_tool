@@ -23,8 +23,9 @@ Assume the project already runs manually before you automate it.
 ```bash
 cd /home/pmpmt/Documents
 
-# Use your real venv path
-./backup_tool/.venv/bin/python -m backup_tool.main
+# Use your real venv path; PYTHONPATH must include backup_tool/src
+PYTHONPATH=/home/pmpmt/Documents/backup_tool/src \
+  /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
 ```
 
 Fix dependencies, `.env`, `backup_config.json`, and OAuth token paths before continuing.
@@ -55,6 +56,7 @@ WorkingDirectory=/home/pmpmt/Documents
 
 # Timer/cron runs must not wait for a browser
 Environment=BACKUP_INTERACTIVE=0
+Environment=PYTHONPATH=/home/pmpmt/Documents/backup_tool/src
 
 # Credentials live in .env at repo root (loaded by python-dotenv); no need for
 # Environment=GOOGLE_* in the unit unless you prefer systemd to inject them.
@@ -77,7 +79,7 @@ Notes:
 
 - `User=` / `Group=` — run as your normal user.
 - `WorkingDirectory=` — controls **what folder** is backed up; keep it consistent with manual tests.
-- `ExecStart=` — must use the venv `python` and `-m backup_tool.main`. Change the path if your venv is not under `backup_tool/.venv`.
+- `PYTHONPATH` — must include `.../backup_tool/src` so Python finds the package. `ExecStart=` uses the venv `python` and `-m backup_tool.main`.
 - `ReadWritePaths=` must cover the tree that contains `.env` (repo root), `src/backup_tool/backup_config.json`, the OAuth token file, `src/backup_tool/backup.log`, and `.backup_cache/` under `WorkingDirectory`.
 
 Save and exit (`Ctrl+O`, `Enter`, `Ctrl+X`).
@@ -184,7 +186,7 @@ sudo systemctl disable mybackup.timer
 ## 8. Common pitfalls and troubleshooting
 
 1. **Venv / module not found**  
-   Confirm `ExecStart` points at the interpreter that has `pip install -e .` run from the backup_tool repo root (editable install includes python-dotenv and other deps).
+   Confirm `ExecStart` uses the venv that has `pip install -r requirements.txt` and that `PYTHONPATH` includes `.../backup_tool/src`.
 
 2. **Works manually, fails under systemd**  
    - Missing or unreadable **`.env`** (repo root) or **`src/backup_tool/backup_config.json`** for the service user.  
@@ -196,7 +198,8 @@ sudo systemctl disable mybackup.timer
 
    ```bash
    cd /home/pmpmt/Documents
-   BACKUP_INTERACTIVE=1 /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+   PYTHONPATH=/home/pmpmt/Documents/backup_tool/src \
+     BACKUP_INTERACTIVE=1 /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
    ```
 
    Ensure timer runs with `BACKUP_INTERACTIVE=0` (or unset).

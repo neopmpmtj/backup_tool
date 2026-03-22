@@ -20,8 +20,8 @@ Dependencies include **`python-dotenv`** (see [`requirements.txt`](requirements.
 
 ```bash
 source .venv/bin/activate
-pip install -e ".[test]"
-pytest
+pip install -r requirements.txt pytest
+PYTHONPATH=src pytest
 ```
 
 ## What it guarantees
@@ -45,10 +45,11 @@ cp .env.example .env
 
 Edit **`.env`**: set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and any optional variables (see comments in `.env.example`). Edit **`src/backup_tool/backup_config.json`** only to adjust `blacklist`.
 
-Install the package in editable mode (from repo root):
+Install dependencies (from repo root):
 
 ```bash
-.venv/bin/pip install -e .
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## First-time authorization
@@ -57,7 +58,8 @@ Run once manually so the browser OAuth flow can create the token file. Set `Work
 
 ```bash
 cd /home/pmpmt/Documents
-BACKUP_INTERACTIVE=1 /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+PYTHONPATH=/home/pmpmt/Documents/backup_tool/src \
+  BACKUP_INTERACTIVE=1 /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
 ```
 
 After this, the systemd timer can run non-interactively.
@@ -66,7 +68,8 @@ After this, the systemd timer can run non-interactively.
 
 ```bash
 cd /home/pmpmt/Documents
-/home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
+PYTHONPATH=/home/pmpmt/Documents/backup_tool/src \
+  /home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
 ```
 
 ## Where local temp archives go
@@ -107,6 +110,7 @@ Group=pmpmt
 WorkingDirectory=/home/pmpmt/Documents
 
 Environment=BACKUP_INTERACTIVE=0
+Environment=PYTHONPATH=/home/pmpmt/Documents/backup_tool/src
 
 ExecStart=/home/pmpmt/Documents/backup_tool/.venv/bin/python -m backup_tool.main
 
@@ -126,7 +130,7 @@ WantedBy=multi-user.target
 
 - `WorkingDirectory=` is the tree that gets snapshotted (here, your Documents folder).
 - `Environment=BACKUP_INTERACTIVE=0` avoids hanging on a timer waiting for a browser.
-- Use the **venv** that has `requirements.txt` installed; adjust `ExecStart` if your venv path differs.
+- `PYTHONPATH` must include `.../backup_tool/src` so Python finds the package; adjust paths if your backup_tool dir differs.
 
 ### `/etc/systemd/system/mybackup.timer`
 
