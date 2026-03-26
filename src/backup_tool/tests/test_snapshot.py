@@ -57,6 +57,24 @@ class TestCreateSnapshotArchive:
         assert not any(n.startswith(".git") for n in names)
         assert not any(n.startswith("venv") for n in names)
 
+    def test_archive_excludes_absolute_blacklisted_dir(
+        self, tmp_source_dir: Path, blacklist: list[str]
+    ) -> None:
+        abs_blacklisted = tmp_source_dir / "code archive"
+        abs_blacklisted.mkdir()
+        (abs_blacklisted / "secret.txt").write_text("ignored")
+
+        snap = create_snapshot_archive(
+            source_dir=tmp_source_dir,
+            cache_dir=tmp_source_dir / ".backup_cache",
+            blacklist=blacklist + [str(abs_blacklisted)],
+        )
+
+        with tarfile.open(snap.archive_path, "r:gz") as tf:
+            names = tf.getnames()
+
+        assert not any(n.startswith("code archive") for n in names)
+
     def test_cache_dir_created(self, tmp_path: Path) -> None:
         cache = tmp_path / ".backup_cache"
         assert not cache.exists()

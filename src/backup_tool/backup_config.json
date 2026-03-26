@@ -7,6 +7,7 @@
     "node_modules",
     ".mypy_cache",
     ".pytest_cache",
-    ".backup_cache"
+    ".backup_cache",
+    "/home/pmpmt/Documents/All Documents/cursor_scripts_python/code_arquive"
   ]
 }

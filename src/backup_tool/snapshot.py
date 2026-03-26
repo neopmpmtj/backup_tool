@@ -38,6 +38,29 @@ def _build_exclude_sets(blacklist: List[str]) -> List[str]:
     return merged
 
 
+def _split_blacklist_entries(blacklist: List[str]) -> tuple[set[str], list[Path]]:
+    """Split blacklist into component names and absolute paths."""
+    name_entries: set[str] = set()
+    absolute_entries: list[Path] = []
+
+    for raw in _build_exclude_sets(blacklist):
+        entry = str(raw).strip()
+        if not entry:
+            continue
+
+        p = Path(entry).expanduser()
+        if p.is_absolute():
+            absolute_entries.append(p.resolve())
+        else:
+            name_entries.add(entry)
+
+    return name_entries, absolute_entries
+
+
+def _is_within(path: Path, parent: Path) -> bool:
+    return path == parent or parent in path.parents
+
+
 def _pruned_walk(root: Path, blacklist: List[str]) -> Iterable[tuple[str, List[str], List[str]]]:
     """
     os.walk with in-place directory pruning.
@@ -45,12 +68,21 @@ def _pruned_walk(root: Path, blacklist: List[str]) -> Iterable[tuple[str, List[s
     This is the key fix: we remove blacklisted directories BEFORE descent,
     so we never enumerate their children.
     """
-    bl = set(_build_exclude_sets(blacklist))
+    name_blacklist, absolute_blacklist = _split_blacklist_entries(blacklist)
 
     for dirpath, dirnames, filenames in os.walk(root):
         # prune in-place
         original = list(dirnames)
-        dirnames[:] = [d for d in dirnames if d not in bl]
+        current_dir = Path(dirpath).resolve()
+        kept: list[str] = []
+        for d in dirnames:
+            abs_candidate = (current_dir / d).resolve()
+            if d in name_blacklist:
+                continue
+            if any(_is_within(abs_candidate, p) for p in absolute_blacklist):
+                continue
+            kept.append(d)
+        dirnames[:] = kept
 
         removed = set(original) - set(dirnames)
         for r in sorted(removed):
@@ -83,11 +115,13 @@ def create_snapshot_archive(
     archive_name = f"backup_{hostname}_{ts}.tar.gz"
     archive_path = cache_dir / archive_name
 
-    bl_set = set(_build_exclude_sets(blacklist))
+    name_blacklist, absolute_blacklist = _split_blacklist_entries(blacklist)
 
-    def should_skip_path(p: Path) -> bool:
+    def should_skip_path(abs_path: Path, rel_path: Path) -> bool:
         # Skip any path whose any component matches a blacklisted name
-        return any(part in bl_set for part in p.parts)
+        if any(part in name_blacklist for part in rel_path.parts):
+            return True
+        return any(_is_within(abs_path.resolve(), p) for p in absolute_blacklist)
 
     logger.info(f"Creating snapshot from: {source_dir}")
     logger.info(f"Archive path: {archive_path}")
@@ -98,14 +132,14 @@ def create_snapshot_archive(
 
             # Add directory itself (so empty dirs are preserved)
             rel_dir = dp.relative_to(source_dir)
-            if rel_dir != Path(".") and not should_skip_path(rel_dir):
+            if rel_dir != Path(".") and not should_skip_path(dp, rel_dir):
                 tf.add(dp, arcname=str(rel_dir), recursive=False)
 
             for fn in filenames:
                 abs_file = dp / fn
                 rel_file = abs_file.relative_to(source_dir)
 
-                if should_skip_path(rel_file):
+                if should_skip_path(abs_file, rel_file):
                     continue
 
                 # Avoid archiving the archive itself if cache is inside source_dir
